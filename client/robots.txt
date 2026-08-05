@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /uploads/
+Disallow: /api/
+
+Sitemap: https://ваш-домен.ru/sitemap.xml

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="shortcut icon" type="image/x-icon" href="img/logo.ico">
+    <link rel="stylesheet" href="main.css">
+    <title>ЯРД. Админ панель</title>
+</head>
+<body>
+    <header>
+        <div class="logo"><img src="img/logo.png" alt=""></div>
+        <nav class="admin-nav">
+            <div class="nav-logo"><img src="img/logo.png" alt=""></div>
+            <div class="admin-nav__item">Заявки на заказы</div>
+            <div class="admin-nav__item">Управление проектами</div>
+            <div class="admin-nav__item">Чаты с пользователями</div>
+            <div id="logoutButton">Выйти</div>
+        </nav>
+        <div class="burger">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </header>
+
+    <div class="requests-wrapper tab">
+        <h3 class="wrapper-title">Заявки на заказы</h3>
+        <div class="requests-list"></div>
+    </div>
+
+    <div class="projectsmanagement-wrapper tab">
+        <h3 class="wrapper-title">Управление проектами</h3>
+        <div class="add-project">+ Добавить новый</div>
+        <div class="projects-list"></div>
+        <div class="full-project"></div>
+        <div class="new-project">
+            <div class="back">Назад</div>
+            <div class="add-project-page">
+                <h1 class="page-title">Новый проект</h1>
+            </div>
+            <div class="back">Назад</div>
+        </div>
+    </div>
+
+    <div class="chats-wrapper tab">
+        <div class="chats">
+            <div id="chat-list">
+                <h3 style="margin-bottom: 15px;">Чаты</h3>
+                <div id="chats-container">
+                </div>
+            </div>
+
+            <div id="chat-area">
+                <div id="chat-header">
+                    <div id="chat-arrow">
+                        <svg viewBox="0 0 24 24" width="24" height="24">
+                          <path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div id="chat-header__text">Выберите чат слева</div>
+                    <div id="chat-header__button">Удалить чат</div>
+                </div>
+                <div id="messages">
+                    <div id="no-chat-selected">👈 Нажмите на чат, чтобы открыть</div>
+                </div>
+                <div id="input-area" style="display: none;">
+                    <input type="text" id="reply-input" placeholder="Введите ответ...">
+                    <button id="reply-btn">Отправить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal">
+        <div class="modal-window">
+            <div class="modal-window__text">Вы уверены что хотите удалить чат с c22a9d07... ?</div>
+            <div class="modal-window__buttons">
+                <div class="modal-btn yes">Да</div>
+                <div class="modal-btn no">Нет</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loginModal" class="login-modal" style="display: none;">
+        <div class="login-modal-content">
+            <h2>Вход в админ-панель</h2>
+            <form id="loginForm">
+                <div class="login-form-group">
+                    <label for="loginInput">Логин</label>
+                    <input type="text" id="loginInput" placeholder="Введите логин" required>
+                </div>
+                <div class="login-form-group">
+                    <label for="passwordInput">Пароль</label>
+                    <input type="password" id="passwordInput" placeholder="Введите пароль" required>
+                </div>
+                <div id="loginError" class="login-error" style="display: none;"></div>
+                <button type="submit" class="login-button">Войти</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="admin-auth.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
