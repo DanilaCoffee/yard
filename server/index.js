@@ -85,10 +85,14 @@ const upload = multer({
 async function startServer() {
   try {
     const db = await mysql.createConnection({
-      host: '127.0.0.1',
-      user: 'root',
-      password: '',
-      database: 'yard'
+        host: "192.168.0.4",
+        user: "gen_user",
+        password: "46oQ,#Y)g_js*6",
+        database: "default_db",
+        port: 3306,
+        ssl: {
+            rejectUnauthorized: false
+        }
     });
     
     console.log('Подключено к БД');
