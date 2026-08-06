@@ -85,16 +85,16 @@ const upload = multer({
 async function startServer() {
   try {
     const db = await mysql.createConnection({
-        host: "192.168.0.4",
-        user: "gen_user",
-        password: "46oQ,#Y)g_js*6",
-        database: "default_db",
-        port: 3306,
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DBNAME,
+        port: process.env.MYSQL_PORT,
         ssl: {
             rejectUnauthorized: false
         }
     });
-    
+
     console.log('Подключено к БД');
     
     app.use(express.json());
