@@ -28,7 +28,7 @@ async function sendVKNotification(text) {
                     {
                         action: {
                             type: "open_link",
-                            link: 'https://danilacoffee.github.io/Layout-test/',
+                            link: "ярд-ремонт.рф/admin",
                             label: "👑 Перейти в админ-панель"
                         }
                     }
@@ -38,7 +38,7 @@ async function sendVKNotification(text) {
         });
 
         await vk.api.messages.send({
-            peer_id: parseInt(process.env.ADMIN_ID),
+            peer_id: 684560119,
             message: text,
             random_id: Date.now(),
             keyboard: keyboard
