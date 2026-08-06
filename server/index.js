@@ -28,7 +28,7 @@ async function sendVKNotification(text) {
                     {
                         action: {
                             type: "open_link",
-                            link: "ярд-ремонт.рф/admin",
+                            link: "https://ярд-ремонт.рф/admin",
                             label: "👑 Перейти в админ-панель"
                         }
                     }
