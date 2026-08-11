@@ -1170,7 +1170,6 @@ async function loadProjects() {
             throw new Error('Ошибка загрузки проектов');
         }
         projects = await response.json();
-        projects.reverse();
         renderProjects(projects[0], 1);
 
         const sliderArrows = document.querySelectorAll('.slider__arrow');

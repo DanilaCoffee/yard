@@ -374,16 +374,36 @@ a {
 
 .project__button button {
     border: none;
-    background-color: #4EFC8C;
     color: #fff;
     font-size: 17px;
     padding: 6px 12px;
+    margin-left: 1vw;
     border-radius: 5px;
     cursor: pointer;
     transition: background-color, 150ms ease;
 }
 
-.project__button button:hover {
+.project__button button.up {
+    background-color: #39D9DF;
+}
+
+.project__button button.down {
+    background-color: #E0D150;
+}
+
+.project__button button.open {
+    background-color: #4EFC8C;
+}
+
+.project__button button.up:hover {
+    background-color: #29B7BC;
+}
+
+.project__button button.down:hover {
+    background-color: #B4A62C;
+}
+
+.project__button button.open:hover {
     background-color: #1AE462;
 }
 

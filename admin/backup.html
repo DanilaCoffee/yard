@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Бэкап картинок</title>
+    <style>
+        body { font-family: Arial; padding: 20px; max-width: 600px; margin: 0 auto; }
+        button { padding: 10px 20px; cursor: pointer; }
+        input { display: block; margin: 10px 0; }
+        .result { margin-top: 20px; padding: 10px; background: #f0f0f0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>📦 Бэкап картинок</h1>
+    
+    <h3>1. Скачать бэкап</h3>
+    <button onclick="exportImages()">📥 Скачать все картинки</button>
+    
+    <h3>2. Восстановить бэкап</h3>
+    <input type="file" id="fileInput" accept=".zip">
+    <button onclick="importImages()">📤 Восстановить</button>
+    
+    <div id="result"></div>
+
+    <script>
+        const SERVER_URL = 'https://xn----gtbe2affjcw5j.xn--p1ai';
+        
+        function exportImages() {
+            window.location.href = `${SERVER_URL}/export-images`;
+        }
+
+        async function importImages() {
+            const fileInput = document.getElementById('fileInput');
+            const result = document.getElementById('result');
+            
+            if (!fileInput.files[0]) {
+                result.className = 'result error';
+                result.textContent = '❌ Выберите ZIP файл';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            result.className = 'result';
+            result.textContent = '⏳ Загрузка...';
+
+            try {
+                const response = await fetch(`${SERVER_URL}/import-images`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    result.className = 'result success';
+                    result.textContent = '✅ ' + (data.message || 'Картинки восстановлены!');
+                } else {
+                    result.className = 'result error';
+                    result.textContent = '❌ ' + (data.error || 'Ошибка при загрузке');
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.textContent = '❌ Ошибка: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

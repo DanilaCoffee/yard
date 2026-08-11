@@ -211,36 +211,6 @@ async function startServer() {
         });
     });
 
-    app.get('/export-images', (req, res) => {
-        const zip = archiver('zip');
-        res.setHeader('Content-Type', 'application/zip');
-        res.setHeader('Content-Disposition', `attachment; filename=images-${Date.now()}.zip`);
-        zip.pipe(res);
-        zip.directory('uploads', 'uploads');
-        zip.finalize();
-    });
-
-    const uploadArchive = multer({ 
-        dest: 'temp/',
-        limits: { fileSize: 100 * 1024 * 1024 }
-    });
-
-    app.post('/import-images', uploadArchive.single('file'), (req, res) => {
-        if (!req.file) {
-            return res.status(400).json({ error: 'Файл не загружен' });
-        }
-        
-        fs.createReadStream(req.file.path)
-            .pipe(unzipper.Extract({ path: './' }))
-            .on('close', () => {
-                fs.rmSync(req.file.path);
-                res.json({ success: true, message: 'Картинки восстановлены' });
-            })
-            .on('error', (err) => {
-                res.status(500).json({ error: 'Ошибка распаковки' });
-            });
-    });
-
     app.get('/api/admin/check-auth', (req, res) => {
         if (req.session && req.session.isAdmin) {
             res.json({ 
@@ -267,6 +237,36 @@ async function startServer() {
                 message: 'Вы вышли из системы' 
             });
         });
+    });
+
+    app.get('/export-images', isAuthenticated, (req, res) => {
+        const zip = archiver('zip');
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename=images-${Date.now()}.zip`);
+        zip.pipe(res);
+        zip.directory('uploads', 'uploads');
+        zip.finalize();
+    });
+
+    const uploadArchive = multer({ 
+        dest: 'temp/',
+        limits: { fileSize: 100 * 1024 * 1024 }
+    });
+
+    app.post('/import-images', isAuthenticated, uploadArchive.single('file'), (req, res) => {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Файл не загружен' });
+        }
+        
+        fs.createReadStream(req.file.path)
+            .pipe(unzipper.Extract({ path: './' }))
+            .on('close', () => {
+                fs.rmSync(req.file.path);
+                res.json({ success: true, message: 'Картинки восстановлены' });
+            })
+            .on('error', (err) => {
+                res.status(500).json({ error: 'Ошибка распаковки' });
+            });
     });
 
     app.get('/api/requests', isAuthenticated, async (req, res) => {
@@ -364,7 +364,7 @@ async function startServer() {
 
     app.get('/api/projects', async (req, res) => {
       try {
-          const [projects] = await db.query('SELECT * FROM projects ORDER BY id DESC');
+          const [projects] = await db.query('SELECT * FROM projects ORDER BY sort_order ASC');
           
           for (let project of projects) {
               const [images] = await db.query(
@@ -422,15 +422,19 @@ async function startServer() {
               });
           }
 
+          const [maxResult] = await db.query('SELECT MAX(sort_order) as maxSort FROM projects');
+          const nextSort = (maxResult[0].maxSort ?? 0) + 1;
+
           const [projectResult] = await db.query(
-              `INSERT INTO projects (name, area, renovation_type, duration_days, comment) 
-               VALUES (?, ?, ?, ?, ?)`,
+              `INSERT INTO projects (name, area, renovation_type, duration_days, comment, sort_order) 
+               VALUES (?, ?, ?, ?, ?, ?)`,
               [
                   name.trim(), 
                   parseFloat(area), 
                   renovation_type, 
                   parseInt(duration_days), 
-                  comment ? comment.trim() : ''
+                  comment ? comment.trim() : '',
+                  nextSort
               ]
           );
 
@@ -556,6 +560,43 @@ async function startServer() {
                 message: error.message 
             });
         }
+    });
+
+    app.post('/api/projects/reorder', isAuthenticated, async (req, res) => {
+      const { id, direction } = req.body;
+
+      try {
+        const [current] = await db.query('SELECT * FROM projects WHERE id = ?', [id]);
+        if (current.length === 0) {
+          return res.status(404).json({ error: 'Проект не найден' });
+        }
+
+        const currentSort = current[0].sort_order;
+
+        let neighborQuery;
+        if (direction === 'up') {
+          neighborQuery = 'SELECT * FROM projects WHERE sort_order < ? ORDER BY sort_order DESC LIMIT 1';
+        } else if (direction === 'down') {
+          neighborQuery = 'SELECT * FROM projects WHERE sort_order > ? ORDER BY sort_order ASC LIMIT 1';
+        } else {
+          return res.status(400).json({ error: 'Неверное направление' });
+        }
+
+        const [neighbor] = await db.query(neighborQuery, [currentSort]);
+        if (neighbor.length === 0) {
+          return res.status(400).json({ error: 'Невозможно переместить: крайняя позиция' });
+        }
+
+        const neighborSort = neighbor[0].sort_order;
+
+        await db.query('UPDATE projects SET sort_order = ? WHERE id = ?', [neighborSort, id]);
+        await db.query('UPDATE projects SET sort_order = ? WHERE id = ?', [currentSort, neighbor[0].id]);
+
+        res.json({ success: true });
+      } catch (error) {
+        console.error('Ошибка при изменении порядка:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+      }
     });
 
     app.get('/api/chats', isAuthenticated, async (req, res) => {

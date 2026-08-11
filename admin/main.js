@@ -303,6 +303,34 @@ function renderFullProject(id) {
     });
 }
 
+async function reorderProject(id, direction) {
+  try {
+    const response = await fetch('/api/projects/reorder', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ id, direction })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      alert(error.error || 'Ошибка при изменении порядка');
+      return;
+    }
+
+    document.querySelector('.projectsmanagement-wrapper').style.opacity = '0.6';
+
+    setTimeout(() => {
+        document.querySelector('.projectsmanagement-wrapper').style.opacity = '1';
+        loadProjects();
+    }, 400);
+  } catch (error) {
+    console.error('Ошибка:', error);
+    alert('Ошибка сети');
+  }
+}
+
 function renderProjectCards(projectsArray) {
     const projectsList = document.querySelector('.projects-list');
     document.querySelector('.projectsmanagement-wrapper').scrollTop = 0;
@@ -351,7 +379,9 @@ function renderProjectCards(projectsArray) {
                     </div>
                     <div class="project__comment">${commentText}</div>
                     <div class="project__button">
-                        <button data-project-id="${project.id}">Открыть</button>
+                        <button class="up" data-project-id="${project.id}">Вверх ↑</button>
+                        <button class="down" data-project-id="${project.id}">Вниз ↓</button>
+                        <button class="open" data-project-id="${project.id}">Открыть</button>
                     </div>
                 </div>
             </div>
@@ -359,8 +389,24 @@ function renderProjectCards(projectsArray) {
         
         projectsList.insertAdjacentHTML('beforeend', cardHTML);
     });
+
+    document.querySelectorAll('.project__button .up').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const projectId = parseInt(this.dataset.projectId);
+            reorderProject(projectId, 'up');
+        });
+    });
+
+    document.querySelectorAll('.project__button .down').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const projectId = parseInt(this.dataset.projectId);
+            reorderProject(projectId, 'down');
+        });
+    });
     
-    document.querySelectorAll('.project__button button').forEach(button => {
+    document.querySelectorAll('.project__button .open').forEach(button => {
         button.addEventListener('click', function(e) {
             e.stopPropagation();
             const projectId = parseInt(this.dataset.projectId);
