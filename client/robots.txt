@@ -1,7 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /admin/
-Disallow: /uploads/
+Disallow: /server/
 Disallow: /api/
 
-Sitemap: https://ваш-домен.ru/sitemap.xml
+Sitemap: https://xn----gtbe2affjcw5j.xn--p1ai/sitemap.xml
