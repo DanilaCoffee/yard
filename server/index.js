@@ -4,10 +4,13 @@ const session = require('express-session');
 const bcrypt = require('bcrypt');
 const { body, validationResult } = require('express-validator');
 const multer = require('multer');
+const archiver = require('archiver');
+const unzipper = require('unzipper');
 const path = require('path');
 const fs = require('fs');
 const mysql = require('mysql2/promise');
 const http = require('http');
+const cors = require('cors');
 const socketio = require('socket.io');
 const { VK } = require('vk-io');
 
@@ -101,6 +104,7 @@ async function startServer() {
     app.use(express.static(path.join(__dirname, '../client')));
     app.use('/admin', express.static(path.join(__dirname, '../admin')));
     app.use('/uploads', express.static('uploads'));
+    app.use(cors());
 
     async function checkDB(req, res, next) {
         try {
@@ -201,6 +205,36 @@ async function startServer() {
             success: true, 
             message: 'Вход выполнен успешно' 
         });
+    });
+
+    app.get('/export-images', (req, res) => {
+        const zip = archiver('zip');
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename=images-${Date.now()}.zip`);
+        zip.pipe(res);
+        zip.directory('uploads', 'uploads');
+        zip.finalize();
+    });
+
+    const uploadArchive = multer({ 
+        dest: 'temp/',
+        limits: { fileSize: 100 * 1024 * 1024 }
+    });
+
+    app.post('/import-images', uploadArchive.single('file'), (req, res) => {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Файл не загружен' });
+        }
+        
+        fs.createReadStream(req.file.path)
+            .pipe(unzipper.Extract({ path: './' }))
+            .on('close', () => {
+                fs.rmSync(req.file.path);
+                res.json({ success: true, message: 'Картинки восстановлены' });
+            })
+            .on('error', (err) => {
+                res.status(500).json({ error: 'Ошибка распаковки' });
+            });
     });
 
     app.get('/api/admin/check-auth', (req, res) => {
