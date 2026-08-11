@@ -208,12 +208,17 @@ async function startServer() {
     });
 
     app.get('/export-images', (req, res) => {
-        const zip = archiver('zip');
-        res.setHeader('Content-Type', 'application/zip');
-        res.setHeader('Content-Disposition', `attachment; filename=images-${Date.now()}.zip`);
-        zip.pipe(res);
-        zip.directory('uploads', 'uploads');
-        zip.finalize();
+        try {
+            const zip = archiver.create('zip');
+            res.setHeader('Content-Type', 'application/zip');
+            res.setHeader('Content-Disposition', `attachment; filename=images-${Date.now()}.zip`);
+            zip.pipe(res);
+            zip.directory('uploads', 'uploads');
+            zip.finalize();
+        } catch (error) {
+            console.error('Ошибка экспорта:', error);
+            res.status(500).json({ error: 'Ошибка создания архива' });
+        }
     });
 
     const uploadArchive = multer({ 
