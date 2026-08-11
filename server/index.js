@@ -96,6 +96,10 @@ async function startServer() {
         ssl: {
             rejectUnauthorized: false
         }
+        // host: '127.0.0.1',
+        // user: 'root',
+        // password: '',
+        // database: 'yard'
     });
 
     console.log('Подключено к БД');
@@ -208,17 +212,12 @@ async function startServer() {
     });
 
     app.get('/export-images', (req, res) => {
-        try {
-            const zip = archiver.create('zip');
-            res.setHeader('Content-Type', 'application/zip');
-            res.setHeader('Content-Disposition', `attachment; filename=images-${Date.now()}.zip`);
-            zip.pipe(res);
-            zip.directory('uploads', 'uploads');
-            zip.finalize();
-        } catch (error) {
-            console.error('Ошибка экспорта:', error);
-            res.status(500).json({ error: 'Ошибка создания архива' });
-        }
+        const zip = archiver('zip');
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename=images-${Date.now()}.zip`);
+        zip.pipe(res);
+        zip.directory('uploads', 'uploads');
+        zip.finalize();
     });
 
     const uploadArchive = multer({ 
