@@ -102,6 +102,36 @@ async function startServer() {
     app.use('/admin', express.static(path.join(__dirname, '../admin')));
     app.use('/uploads', express.static('uploads'));
 
+    async function checkDB(req, res, next) {
+        try {
+            await db.query('SELECT 1');
+            next();
+        } catch (error) {
+            if (error.message.includes('closed') || error.code === 'PROTOCOL_CONNECTION_LOST') {
+                console.log('Переподключение к БД...');
+                try {
+                    db = await mysql.createConnection({
+                        host: process.env.MYSQL_HOST,
+                        user: process.env.MYSQL_USER,
+                        password: process.env.MYSQL_PASSWORD,
+                        database: process.env.MYSQL_DBNAME,
+                        port: process.env.MYSQL_PORT,
+                        ssl: {
+                            rejectUnauthorized: false
+                        }
+                    });
+                    next();
+                } catch (err) {
+                    res.status(500).json({ error: 'Ошибка подключения к БД' });
+                }
+            } else {
+                res.status(500).json({ error: 'Ошибка сервера' });
+            }
+        }
+    }
+
+    app.use('/api', checkDB);
+
     const sessionMiddleware = session({
       secret: process.env.SESSION_SECRET,
       resave: false,

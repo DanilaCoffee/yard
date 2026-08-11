@@ -170,7 +170,7 @@ function sendMessage() {
     chatMessages.style.display = 'flex';
     const div = document.createElement('div');
     div.className = 'greeting';
-    div.textContent = 'Спасибо за вопрос! Ответим в течении 24 часов, возвращайтесь 💬';
+    div.textContent = 'Спасибо за вопрос! Ответим в течении одного часа, возвращайтесь 💬';
     chatMessages.appendChild(div);
   }
 
