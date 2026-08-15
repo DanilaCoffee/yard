@@ -87,7 +87,7 @@ const upload = multer({
 
 async function startServer() {
   try {
-    const db = await mysql.createConnection({
+    const pool = mysql.createPool({
         host: process.env.MYSQL_HOST,
         user: process.env.MYSQL_USER,
         password: process.env.MYSQL_PASSWORD,
@@ -95,50 +95,21 @@ async function startServer() {
         port: process.env.MYSQL_PORT,
         ssl: {
             rejectUnauthorized: false
-        }
-        // host: '127.0.0.1',
-        // user: 'root',
-        // password: '',
-        // database: 'yard'
+        },
+        waitForConnections: true,
+        connectionLimit: 5,
+        queueLimit: 0,
+        enableKeepAlive: true,
+        keepAliveInitialDelay: 10000
     });
 
-    console.log('Подключено к БД');
-    
+    console.log('Подключено к БД (pool)');
+
     app.use(express.json());
     app.use(express.static(path.join(__dirname, '../client')));
     app.use('/admin', express.static(path.join(__dirname, '../admin')));
     app.use('/uploads', express.static('uploads'));
     app.use(cors());
-
-    async function checkDB(req, res, next) {
-        try {
-            await db.query('SELECT 1');
-            next();
-        } catch (error) {
-            if (error.message.includes('closed') || error.code === 'PROTOCOL_CONNECTION_LOST') {
-                console.log('Переподключение к БД...');
-                try {
-                    db = await mysql.createConnection({
-                        host: process.env.MYSQL_HOST,
-                        user: process.env.MYSQL_USER,
-                        password: process.env.MYSQL_PASSWORD,
-                        database: process.env.MYSQL_DBNAME,
-                        port: process.env.MYSQL_PORT,
-                        ssl: {
-                            rejectUnauthorized: false
-                        }
-                    });
-                    next();
-                } catch (err) {
-                    res.status(500).json({ error: 'Ошибка подключения к БД' });
-                }
-            } else {
-                res.status(500).json({ error: 'Ошибка сервера' });
-            }
-        }
-    }
-
-    app.use('/api', checkDB);
 
     const sessionMiddleware = session({
       secret: process.env.SESSION_SECRET,
@@ -162,7 +133,7 @@ async function startServer() {
     });
 
     async function shouldSendNotification(chatId) {
-      const [rows] = await db.query(
+      const [rows] = await pool.query(
         `SELECT created_at 
          FROM messages 
          WHERE chat_id = ? AND sender_type = 'user' 
@@ -271,7 +242,7 @@ async function startServer() {
 
     app.get('/api/requests', isAuthenticated, async (req, res) => {
       try {
-          const [rows] = await db.query(
+          const [rows] = await pool.query(
               'SELECT * FROM client_orders ORDER BY is_viewed ASC, created_at DESC'
           );
           res.json(rows);
@@ -285,7 +256,7 @@ async function startServer() {
       const { id } = req.params;
       
       try {
-          const [result] = await db.query(
+          const [result] = await pool.query(
               'UPDATE client_orders SET is_viewed = TRUE WHERE id = ?',
               [id]
           );
@@ -305,7 +276,7 @@ async function startServer() {
       const { id } = req.params;
       
       try {
-          const [result] = await db.query(
+          const [result] = await pool.query(
               'DELETE FROM client_orders WHERE id = ?',
               [id]
           );
@@ -338,7 +309,7 @@ async function startServer() {
         }
         
         try {
-            const [result] = await db.query(
+            const [result] = await pool.query(
                 `INSERT INTO client_orders 
                 (client_name, client_email, client_phone, client_uuid, request_type, client_comment) 
                 VALUES (?, ?, ?, ?, ?, ?)`,
@@ -364,10 +335,10 @@ async function startServer() {
 
     app.get('/api/projects', async (req, res) => {
       try {
-          const [projects] = await db.query('SELECT * FROM projects ORDER BY sort_order ASC');
+          const [projects] = await pool.query('SELECT * FROM projects ORDER BY sort_order ASC');
           
           for (let project of projects) {
-              const [images] = await db.query(
+              const [images] = await pool.query(
                   'SELECT image_url FROM project_images WHERE project_id = ?',
                   [project.id]
               );
@@ -422,10 +393,10 @@ async function startServer() {
               });
           }
 
-          const [maxResult] = await db.query('SELECT MAX(sort_order) as maxSort FROM projects');
+          const [maxResult] = await pool.query('SELECT MAX(sort_order) as maxSort FROM projects');
           const nextSort = (maxResult[0].maxSort ?? 0) + 1;
 
-          const [projectResult] = await db.query(
+          const [projectResult] = await pool.query(
               `INSERT INTO projects (name, area, renovation_type, duration_days, comment, sort_order) 
                VALUES (?, ?, ?, ?, ?, ?)`,
               [
@@ -447,7 +418,7 @@ async function startServer() {
           if (req.files && req.files.length > 0) {
               const imageValues = req.files.map(file => [file.filename, projectId]);
               
-              const [imageResult] = await db.query(
+              const [imageResult] = await pool.query(
                   `INSERT INTO project_images (image_url, project_id) VALUES ?`,
                   [imageValues]
               );
@@ -457,12 +428,12 @@ async function startServer() {
               }
           }
 
-          const [project] = await db.query(
+          const [project] = await pool.query(
               `SELECT * FROM projects WHERE id = ?`,
               [projectId]
           );
 
-          const [images] = await db.query(
+          const [images] = await pool.query(
               `SELECT image_url FROM project_images WHERE project_id = ?`,
               [projectId]
           );
@@ -505,12 +476,12 @@ async function startServer() {
                 return res.status(400).json({ error: 'Неверный ID проекта' });
             }
 
-            const [images] = await db.query(
+            const [images] = await pool.query(
                 'SELECT image_url FROM project_images WHERE project_id = ?',
                 [projectId]
             );
 
-            const [project] = await db.query(
+            const [project] = await pool.query(
                 'SELECT id FROM projects WHERE id = ?',
                 [projectId]
             );
@@ -537,7 +508,7 @@ async function startServer() {
                 }
             }
 
-            const [result] = await db.query(
+            const [result] = await pool.query(
                 'DELETE FROM projects WHERE id = ?',
                 [projectId]
             );
@@ -566,7 +537,7 @@ async function startServer() {
       const { id, direction } = req.body;
 
       try {
-        const [current] = await db.query('SELECT * FROM projects WHERE id = ?', [id]);
+        const [current] = await pool.query('SELECT * FROM projects WHERE id = ?', [id]);
         if (current.length === 0) {
           return res.status(404).json({ error: 'Проект не найден' });
         }
@@ -582,15 +553,15 @@ async function startServer() {
           return res.status(400).json({ error: 'Неверное направление' });
         }
 
-        const [neighbor] = await db.query(neighborQuery, [currentSort]);
+        const [neighbor] = await pool.query(neighborQuery, [currentSort]);
         if (neighbor.length === 0) {
           return res.status(400).json({ error: 'Невозможно переместить: крайняя позиция' });
         }
 
         const neighborSort = neighbor[0].sort_order;
 
-        await db.query('UPDATE projects SET sort_order = ? WHERE id = ?', [neighborSort, id]);
-        await db.query('UPDATE projects SET sort_order = ? WHERE id = ?', [currentSort, neighbor[0].id]);
+        await pool.query('UPDATE projects SET sort_order = ? WHERE id = ?', [neighborSort, id]);
+        await pool.query('UPDATE projects SET sort_order = ? WHERE id = ?', [currentSort, neighbor[0].id]);
 
         res.json({ success: true });
       } catch (error) {
@@ -601,7 +572,7 @@ async function startServer() {
 
     app.get('/api/chats', isAuthenticated, async (req, res) => {
       try {
-        const [chats] = await db.query(`
+        const [chats] = await pool.query(`
           SELECT 
             c.id, 
             c.user_id, 
@@ -628,7 +599,7 @@ async function startServer() {
     app.delete('/api/chats/:userId', isAuthenticated, async (req, res) => {
       try {
         const { userId } = req.params;
-        const [chat] = await db.query('SELECT id FROM chats WHERE user_id = ?', [userId]);
+        const [chat] = await pool.query('SELECT id FROM chats WHERE user_id = ?', [userId]);
         
         if (chat.length === 0) {
           return res.status(404).json({ error: 'Чат не найден' });
@@ -636,8 +607,8 @@ async function startServer() {
         
         const chatId = chat[0].id;
 
-        await db.query('DELETE FROM messages WHERE chat_id = ?', [chatId]);
-        await db.query('DELETE FROM chats WHERE id = ?', [chatId]);
+        await pool.query('DELETE FROM messages WHERE chat_id = ?', [chatId]);
+        await pool.query('DELETE FROM chats WHERE id = ?', [chatId]);
         
         res.json({ 
           success: true, 
@@ -651,12 +622,12 @@ async function startServer() {
 
     app.get('/api/messages/:userId', isAuthenticated, async (req, res) => {
       try {
-        const [chat] = await db.query('SELECT id FROM chats WHERE user_id = ?', [req.params.userId]);
+        const [chat] = await pool.query('SELECT id FROM chats WHERE user_id = ?', [req.params.userId]);
         if (chat.length === 0) {
           return res.json([]);
         }
         
-        const [messages] = await db.query(
+        const [messages] = await pool.query(
           'SELECT * FROM messages WHERE chat_id = ? ORDER BY created_at ASC',
           [chat[0].id]
         );
@@ -704,7 +675,7 @@ async function startServer() {
             return;
           }
 
-          const [chats] = await db.query('SELECT * FROM chats ORDER BY created_at DESC');
+          const [chats] = await pool.query('SELECT * FROM chats ORDER BY created_at DESC');
           socket.emit('admin_chats_list', chats);
         });
         
@@ -714,7 +685,7 @@ async function startServer() {
             return;
           }
 
-          const [chat] = await db.query('SELECT id FROM chats WHERE user_id = ?', [targetUserId]);
+          const [chat] = await pool.query('SELECT id FROM chats WHERE user_id = ?', [targetUserId]);
           if (chat.length === 0) {
             socket.emit('admin_error', 'Чат не найден');
             return;
@@ -722,7 +693,7 @@ async function startServer() {
 
           socket.join(targetUserId);
           
-          const [messages] = await db.query(
+          const [messages] = await pool.query(
             'SELECT * FROM messages WHERE chat_id = ? ORDER BY created_at ASC',
             [chat[0].id]
           );
@@ -737,10 +708,10 @@ async function startServer() {
           
           if (!text || !text.trim()) return;
           
-          const [chat] = await db.query('SELECT id FROM chats WHERE user_id = ?', [userId]);
+          const [chat] = await pool.query('SELECT id FROM chats WHERE user_id = ?', [userId]);
           if (chat.length === 0) return;
           
-          await db.query(
+          await pool.query(
             'INSERT INTO messages (chat_id, sender_type, text) VALUES (?, ?, ?)',
             [chat[0].id, 'admin', text]
           );
@@ -753,11 +724,11 @@ async function startServer() {
       }
       
       if (userId) {
-        let [chat] = await db.query('SELECT id FROM chats WHERE user_id = ?', [userId]);
+        let [chat] = await pool.query('SELECT id FROM chats WHERE user_id = ?', [userId]);
         let chatId;
         
         if (chat.length === 0) {
-          const [result] = await db.query('INSERT INTO chats (user_id) VALUES (?)', [userId]);
+          const [result] = await pool.query('INSERT INTO chats (user_id) VALUES (?)', [userId]);
           chatId = result.insertId;
         } else {
           chatId = chat[0].id;
@@ -765,7 +736,7 @@ async function startServer() {
 
         socket.join(userId);
 
-        const [messages] = await db.query(
+        const [messages] = await pool.query(
           'SELECT * FROM messages WHERE chat_id = ? ORDER BY created_at ASC',
           [chatId]
         );
@@ -774,7 +745,7 @@ async function startServer() {
         socket.on('user_message', async (text) => {
           if (!text || !text.trim()) return;
           
-          await db.query(
+          await pool.query(
             'INSERT INTO messages (chat_id, sender_type, text) VALUES (?, ?, ?)',
             [chatId, 'user', text]
           );
