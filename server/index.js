@@ -103,7 +103,7 @@ async function startServer() {
         keepAliveInitialDelay: 10000
     });
 
-    console.log('Подключено к БД (pool)');
+    console.log('Подключено к БД');
 
     app.use(express.json());
     app.use(express.static(path.join(__dirname, '../client')));
@@ -568,6 +568,157 @@ async function startServer() {
         console.error('Ошибка при изменении порядка:', error);
         res.status(500).json({ error: 'Ошибка сервера' });
       }
+    });
+
+    app.get('/api/reviews', async (req, res) => {
+        try {
+            const [reviews] = await pool.query(
+                'SELECT * FROM reviews WHERE status = "published" ORDER BY display_order ASC'
+            );
+            res.json(reviews);
+        } catch (error) {
+            console.error('Ошибка при получении отзывов:', error);
+            res.status(500).json({ error: 'Ошибка сервера' });
+        }
+    });
+
+    app.get('/api/admin/reviews/pending', isAuthenticated, async (req, res) => {
+        try {
+            const [reviews] = await pool.query(
+                'SELECT * FROM reviews WHERE status = "pending" ORDER BY id DESC'
+            );
+            res.json(reviews);
+        } catch (error) {
+            console.error('Ошибка при получении отзывов на проверке:', error);
+            res.status(500).json({ error: 'Ошибка сервера' });
+        }
+    });
+
+    app.post('/api/admin/reviews/reorder', isAuthenticated, async (req, res) => {
+        const { id, direction } = req.body;
+
+        try {
+            const [current] = await pool.query('SELECT * FROM reviews WHERE id = ?', [id]);
+            if (current.length === 0) {
+                return res.status(404).json({ error: 'Отзыв не найден' });
+            }
+
+            const currentOrder = current[0].display_order;
+
+            let neighborQuery;
+            if (direction === 'up') {
+                neighborQuery = 'SELECT * FROM reviews WHERE status = "published" AND display_order < ? ORDER BY display_order DESC LIMIT 1';
+            } else if (direction === 'down') {
+                neighborQuery = 'SELECT * FROM reviews WHERE status = "published" AND display_order > ? ORDER BY display_order ASC LIMIT 1';
+            } else {
+                return res.status(400).json({ error: 'Неверное направление' });
+            }
+
+            const [neighbor] = await pool.query(neighborQuery, [currentOrder]);
+            if (neighbor.length === 0) {
+                return res.status(400).json({ error: 'Невозможно переместить: крайняя позиция' });
+            }
+
+            const neighborOrder = neighbor[0].display_order;
+
+            await pool.query('UPDATE reviews SET display_order = ? WHERE id = ?', [neighborOrder, id]);
+            await pool.query('UPDATE reviews SET display_order = ? WHERE id = ?', [currentOrder, neighbor[0].id]);
+
+            res.json({ success: true });
+        } catch (error) {
+            console.error('Ошибка при изменении порядка отзыва:', error);
+            res.status(500).json({ error: 'Ошибка сервера' });
+        }
+    });
+
+    app.delete('/api/admin/reviews/:id', isAuthenticated, async (req, res) => {
+        const { id } = req.params;
+
+        try {
+            const [result] = await pool.query('DELETE FROM reviews WHERE id = ?', [id]);
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ error: 'Отзыв не найден' });
+            }
+
+            res.json({ success: true });
+        } catch (error) {
+            console.error('Ошибка при удалении отзыва:', error);
+            res.status(500).json({ error: 'Ошибка сервера' });
+        }
+    });
+
+    app.post('/api/admin/reviews/publish/:id', isAuthenticated, async (req, res) => {
+        const { id } = req.params;
+
+        try {
+            const [result] = await pool.query(
+                'UPDATE reviews SET status = "published" WHERE id = ? AND status = "pending"',
+                [id]
+            );
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ error: 'Отзыв не найден или уже опубликован' });
+            }
+
+            const [maxOrder] = await pool.query(
+                'SELECT MAX(display_order) as max FROM reviews WHERE status = "published"'
+            );
+            const newOrder = (maxOrder[0].max || 0) + 1;
+
+            await pool.query(
+                'UPDATE reviews SET display_order = ? WHERE id = ?',
+                [newOrder, id]
+            );
+
+            res.json({ success: true });
+        } catch (error) {
+            console.error('Ошибка при публикации отзыва:', error);
+            res.status(500).json({ error: 'Ошибка сервера' });
+        }
+    });
+
+    app.post('/api/reviews', async (req, res) => {
+        const { client_name, project_name, text, rating } = req.body;
+
+        try {
+            const [result] = await pool.query(
+                'INSERT INTO reviews (client_name, project_name, text, rating, status, display_order) VALUES (?, ?, ?, ?, "pending", 0)',
+                [client_name, project_name, text, rating]
+            );
+
+            res.status(201).json({ id: result.insertId, success: true });
+
+            // sendVKNotification(
+            //   `📝 НОВЫЙ ОТЗЫВ!\n\n` +
+            //   `Имя клиента: ${client_name}\n` +
+            //   `Перейдите в админку, чтобы просмотреть и опубликовать.`
+            // );
+        } catch (error) {
+            console.error('Ошибка при создании отзыва:', error);
+            res.status(500).json({ error: 'Ошибка сервера' });
+        }
+    });
+
+    app.post('/api/admin/reviews', isAuthenticated, async (req, res) => {
+        const { client_name, project_name, text, rating } = req.body;
+
+        try {
+            const [maxOrder] = await pool.query(
+                'SELECT MAX(display_order) as max FROM reviews WHERE status = "published"'
+            );
+            const newOrder = (maxOrder[0].max || 0) + 1;
+
+            const [result] = await pool.query(
+                'INSERT INTO reviews (client_name, project_name, text, rating, status, display_order) VALUES (?, ?, ?, ?, "published", ?)',
+                [client_name, project_name, text, rating, newOrder]
+            );
+
+            res.status(201).json({ id: result.insertId, success: true });
+        } catch (error) {
+            console.error('Ошибка при создании отзыва администратором:', error);
+            res.status(500).json({ error: 'Ошибка сервера' });
+        }
     });
 
     app.get('/api/chats', isAuthenticated, async (req, res) => {

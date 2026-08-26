@@ -11,9 +11,10 @@
     <header>
         <div class="logo"><img src="img/logo.png" alt=""></div>
         <nav class="admin-nav">
-            <div class="nav-logo"><img src="img/logo.png" alt=""></div>
+            <div class="nav-logo"><img src="img/logo-white.png" alt=""></div>
             <div class="admin-nav__item">Заявки на заказы</div>
             <div class="admin-nav__item">Управление проектами</div>
+            <div class="admin-nav__item">Отзывы</div>
             <div class="admin-nav__item">Чаты с пользователями</div>
             <div id="logoutButton">Выйти</div>
         </nav>
@@ -40,6 +41,59 @@
                 <h1 class="page-title">Новый проект</h1>
             </div>
             <div class="back">Назад</div>
+        </div>
+    </div>
+
+    <div class="reviews-wrapper tab">
+        <h3 class="wrapper-title">Отзывы</h3>
+        <div class="reviews-tabs-container">
+          <div class="reviews-tabs-header">
+            <button class="reviews-tab-button reviews-tab-button-active" data-tab="published">
+              Опубликованные отзывы
+            </button>
+            <button class="reviews-tab-button" data-tab="pending">
+              Отзывы на проверке
+            </button>
+            <button class="reviews-tab-button" data-tab="write">
+              Написать отзыв
+            </button>
+          </div>
+          <div class="reviews-tab-content">
+            <div class="reviews-tab-pane reviews-tab-pane-active" id="reviews-pane-published"></div>
+            <div class="reviews-tab-pane" id="reviews-pane-pending"></div>
+            <div class="reviews-tab-pane" id="reviews-pane-write">
+              <p>Форма для написания нового отзыва.</p>
+              <div class="newreview-title">Имя клиента:</div>
+              <input type="text" name="client-name" placeholder="Иванов Иван" maxlength="25">
+              <div class="newreview-title">Проект:</div>
+              <select id="newreviewProject" class="newreview-project">
+                <option value="">Выберите проект</option>
+              </select>
+              <div id="customProjectContainer" style="display: none;">
+                <div class="newreview-title">Введите название проекта:</div>
+                <input type="text" id="customProjectInput" placeholder="Название проекта">
+              </div>
+              <div class="stars-block">
+                  <div class="newreview-title">Звезды:</div>
+                  <div class="newreview-stars" id="starsContainer">
+                    <input type="radio" name="rating" id="star5" value="5">
+                    <label for="star5" title="5 звезд">★</label>
+                    <input type="radio" name="rating" id="star4" value="4">
+                    <label for="star4" title="4 звезды">★</label>
+                    <input type="radio" name="rating" id="star3" value="3">
+                    <label for="star3" title="3 звезды">★</label>
+                    <input type="radio" name="rating" id="star2" value="2">
+                    <label for="star2" title="2 звезды">★</label>
+                    <input type="radio" name="rating" id="star1" value="1">
+                    <label for="star1" title="1 звезда">★</label>
+                  </div>
+              </div>
+              <div class="newreview-title">Текст отзыва:</div>
+              <textarea id="newreviewText" class="newreview-text" rows="7" placeholder="Текст отзыва..."></textarea>
+              <br>
+              <button class="newreview-button">Опубликовать</button>
+            </div>
+          </div>
         </div>
     </div>
 

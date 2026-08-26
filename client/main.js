@@ -573,7 +573,55 @@ document.addEventListener('DOMContentLoaded', function() {
   
   list.addEventListener('scroll', updateUI);
   
-  updateUI();
+  async function loadClientReviews() {
+    try {
+        const response = await fetch('/api/reviews');
+        const reviews = await response.json();
+        
+        const list = document.querySelector('.reviews__list');
+        list.innerHTML = '';
+        
+        if (reviews.length === 0) {
+          list.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">Пока нет отзывов</div>';
+          updateUI();
+          return;
+        }
+        
+        reviews.forEach(review => {
+          const reviewDiv = document.createElement('div');
+          reviewDiv.className = 'review';
+          
+          let starsHTML = '';
+          for (let i = 0; i < review.rating; i++) {
+            starsHTML += '<img src="img/star.svg" alt="Звезда">';
+          }
+          
+          let text = review.text;
+          if (!text.startsWith('"') && !text.endsWith('"')) {
+            text = `"${text}"`;
+          }
+          
+          reviewDiv.innerHTML = `
+              <div class="review__header">
+                  <div class="review__author">
+                      <div class="name">${review.client_name}</div>
+                      <div class="description">${review.project_name}</div>
+                  </div>
+                  <div class="review__stars">${starsHTML}</div>
+              </div>
+              <div class="review__text">${text}</div>
+          `;
+          
+          list.appendChild(reviewDiv);
+        });
+        
+        updateUI();
+    } catch (error) {
+        console.error('Ошибка при загрузке отзывов:', error);
+    }
+  }
+
+  loadClientReviews();
 });
 
 function formatArea(area) {
@@ -859,6 +907,87 @@ function openProjectModal(project) {
     }
   });
 
+  document.querySelector('.slider-info').innerHTML = `
+        <div class="slider-info__container">
+          <div class="title"></div>
+          <div class="comment"></div>
+          <div class="data">
+            <div class="data__item">
+              <div class="data__title">
+                <img src="img/project-modal-icon-1.svg" alt="Иконка площади">
+                Площадь
+              </div>
+              <div class="data__value"></div>
+            </div>
+            <div class="data__item">
+              <div class="data__title">
+                <img src="img/project-modal-icon-2.svg" alt="Иконка срока">
+                Срок
+              </div>
+              <div class="data__value"></div>
+            </div>
+            <div class="data__item">
+              <div class="data__title">
+                <img src="img/project-modal-icon-3.svg" alt="Иконка комплектации">
+                Комплектация
+              </div>
+              <div class="data__value"></div>
+            </div>
+          </div>
+          <div class="review-button"></div>
+          <div class="review-form">
+            <form id="reviewForm" action="">
+              <div class="review-form__header">
+                <div class="text">Оставить отзыв</div>
+                <div class="hide-button"><img src="img/review-hide-button.svg" alt=""></div>
+              </div>
+              <div class="review-form__title">
+                Ваше имя
+              </div>
+              <div class="review-form__input">
+                <input type="text" name="client_name" placeholder="Введите ваше имя" maxlength="25" required>
+              </div>
+              <div class="review-form__title">
+                Ваша оценка
+              </div>
+              <div class="review-form__stars">
+                <div class="container" id="starsContainer">
+                  <img src="img/review-star-empty.svg" alt="" data-value="1">
+                  <img src="img/review-star-empty.svg" alt="" data-value="2">
+                  <img src="img/review-star-empty.svg" alt="" data-value="3">
+                  <img src="img/review-star-empty.svg" alt="" data-value="4">
+                  <img src="img/review-star-empty.svg" alt="" data-value="5">
+                </div>
+                <div class="title">
+                  Нажмите на звезду
+                </div>
+                <input type="hidden" name="rating" id="ratingValue" value="0">
+              </div>
+              <div class="review-form__title">
+                Ваш отзыв
+              </div>
+              <div class="review-form__input">
+                <textarea name="client_name" rows="4" placeholder="Поделитесь своим опытом работы с нами" required></textarea>
+              </div>
+              <div class="review-form__check">
+                <input type="checkbox" required> Я согласен с обработкой персональных данных
+              </div>
+              <div class="review-form__button">
+                <button type="submit">Отправить отзыв</button>
+              </div>
+              <div class="review-form__info">
+                <div class="img">
+                  <img src="img/review-info-icon.svg" alt="">
+                </div>
+                <div class="text">
+                  Ваш отзыв будет опубликован после проверки модератором. 
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+  `;
+
   document.querySelector('.slider-info .title').innerHTML = project.name;
   document.querySelector('.slider-info .comment').innerHTML = project.comment;
 
@@ -869,6 +998,140 @@ function openProjectModal(project) {
   projectData[2].innerHTML = project.renovation_type;
 
   document.querySelector('.project-modal').style.display = 'flex';
+  document.querySelector('.review-button').innerHTML = '<button><img src="img/pencil-icon.svg" alt=""> Оставить отзыв</button>';
+
+  const sliderInfo = document.querySelector('.slider-info__container');
+  const sliderInfoHeight = sliderInfo.offsetHeight;
+
+  const reviewForm = document.querySelector('.review-form');
+
+  reviewForm.style.display = 'block';
+  reviewForm.style.minHeight = '0';
+  reviewForm.style.transform = `translateY(100px)`;
+
+  sliderInfo.style.height = sliderInfoHeight + 10 + 'px';
+
+  const reviewButton = document.querySelector('.review-button button');
+
+  reviewButton.addEventListener('click', () => {
+    setTimeout(() => {
+      sliderInfo.style.height = 'auto';
+    }, 100);
+    reviewForm.style.minHeight = `${sliderInfoHeight}px`;
+    reviewForm.style.opacity = '1';
+    reviewForm.style.transform = `translateY(${-sliderInfoHeight}px)`;
+    if (window.innerWidth <= 500) {
+      setTimeout(() => {
+        document.querySelector('.slider-info__container > .title').style.opacity = '0';
+      }, 200);
+    }
+  });
+
+  document.querySelector('.review-form__header .hide-button').addEventListener('click', () => {
+    sliderInfo.style.height = sliderInfoHeight + 10 + 'px';
+    reviewForm.style.minHeight = '0';
+    reviewForm.style.transform = `translateY(100px)`;
+    if (window.innerWidth <= 500) {
+      document.querySelector('.slider-info__container > .title').style.opacity = '1';
+    }
+  });
+
+  const starsContainer = document.getElementById('starsContainer');
+  const stars = starsContainer.querySelectorAll('#starsContainer img');
+  const ratingInput = document.getElementById('ratingValue');
+
+  let selectedRating = 0;
+
+  function updateStars(rating) {
+      stars.forEach((star, index) => {
+          if (index < rating) {
+              star.src = 'img/review-star-filled.svg';
+          } else {
+              star.src = 'img/review-star-empty.svg';
+          }
+      });
+  }
+
+  starsContainer.addEventListener('click', function(e) {
+      const star = e.target.closest('img');
+      if (!star) return;
+      
+      const value = parseInt(star.dataset.value);
+      selectedRating = value;
+      ratingInput.value = value;
+      updateStars(value);
+  });
+
+  document.getElementById('reviewForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    if (selectedRating === 0) {
+        alert('Пожалуйста, выберите оценку');
+        return;
+    }
+    
+    const formData = {
+        client_name: this.querySelector('input[name="client_name"]').value.trim(),
+        rating: selectedRating,
+        text: this.querySelector('textarea[name="client_name"]').value.trim(),
+        project_name: project.name
+    };
+    
+    if (!formData.client_name) {
+        alert('Введите ваше имя');
+        return;
+    }
+    if (!formData.text) {
+        alert('Введите текст отзыва');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/reviews', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+        
+        if (response.ok) {
+            sliderInfo.style.opacity = '0.6';
+            setTimeout(() => {
+              this.reset();
+              selectedRating = 0;
+              ratingInput.value = 0;
+              updateStars(0);
+              document.querySelector('#reviewForm .review-form__check input').checked = false;
+              reviewForm.style.minHeight = '0';
+              reviewForm.style.transform = `translateY(100px)`;
+              reviewForm.style.display = 'none';
+              sliderInfo.style.height = 'auto';
+              sliderInfo.style.opacity = '1';
+              document.querySelector('.review-button').innerHTML = `
+              <div class="review-success">
+                <div class="img">
+                  <img src="img/review-success.svg" alt="">
+                </div>
+                <div class="content">
+                  <div class="header">Спасибо за ваш отзыв!</div>
+                  <div class="text">
+                    Ваш отзыв отправлен на модерацию. После проверки он появится в разделе "Что говорят наши клиенты".
+                  </div>
+                </div>
+              </div>
+              `;
+              if (window.innerWidth <= 500) {
+                document.querySelector('.slider-info__container > .title').style.opacity = '1';
+              }
+            }, 600);
+        } else {
+            const error = await response.json();
+            alert('Ошибка: ' + error.error);
+        }
+    } catch (error) {
+        console.error('Ошибка при отправке отзыва:', error);
+        alert('Произошла ошибка при отправке. Попробуйте позже.');
+    }
+  });
 }
 
 document.querySelector('.project-close').addEventListener('click', () => {

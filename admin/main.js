@@ -737,6 +737,356 @@ function initAddProjectForm() {
     }
 }
 
+// ОТЗЫВЫ:
+function loadPublishedReviews() {
+    fetch('/api/reviews')
+        .then(response => response.json())
+        .then(reviews => {
+            const container = document.getElementById('reviews-pane-published');
+            container.innerHTML = '';
+            
+            if (reviews.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #999; font-size: 16px;">Отзывов пока нет</div>';
+                return;
+            }
+            
+            reviews.forEach(review => {
+                const card = document.createElement('div');
+                card.className = 'review-published';
+                card.dataset.id = review.id;
+                
+                let starsHTML = '';
+                for (let i = 0; i < 5; i++) {
+                    starsHTML += `<img src="img/${i < review.rating ? 'star' : 'star-empty'}.svg" alt="">`;
+                }
+                
+                card.innerHTML = `
+                    <div class="name">${review.client_name}</div>
+                    <div class="review-project">${review.project_name}</div>
+                    <div class="stars">${starsHTML}</div>
+                    <div class="text">${review.text}</div>
+                    <div class="buttons">
+                        <div class="btn" data-action="up">Вверх</div>
+                        <div class="btn" data-action="down">Вниз</div>
+                        <div class="btn btn-delete" data-action="delete">Удалить</div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        })
+        .catch(error => {
+            console.error('Ошибка при загрузке отзывов:', error);
+        });
+}
+
+function loadPendingReviews() {
+    fetch('/api/admin/reviews/pending')
+        .then(response => response.json())
+        .then(reviews => {
+            const container = document.getElementById('reviews-pane-pending');
+            container.innerHTML = '';
+            
+            if (reviews.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #999; font-size: 16px;">Нет отзывов на проверке</div>';
+                return;
+            }
+            
+            reviews.forEach(review => {
+                const card = document.createElement('div');
+                card.className = 'review-pending';
+                card.dataset.id = review.id;
+                
+                let starsHTML = '';
+                for (let i = 0; i < 5; i++) {
+                    starsHTML += `<img src="img/${i < review.rating ? 'star' : 'star-empty'}.svg" alt="">`;
+                }
+                
+                card.innerHTML = `
+                    <div class="name">${review.client_name}</div>
+                    <div class="review-project">${review.project_name}</div>
+                    <div class="stars">${starsHTML}</div>
+                    <div class="text">${review.text}</div>
+                    <div class="buttons">
+                        <div class="btn btn-publish" data-action="publish">Опубликовать</div>
+                        <div class="btn btn-delete" data-action="delete">Удалить</div>
+                    </div>
+                    <div class="sing" title="На проверке">!</div>
+                `;
+                container.appendChild(card);
+            });
+        })
+        .catch(error => {
+            console.error('Ошибка при загрузке отзывов на проверке:', error);
+        });
+}
+
+function getFormData() {
+    const clientName = document.querySelector('input[name="client-name"]').value.trim();
+    const projectSelect = document.getElementById('newreviewProject');
+    const customProjectInput = document.getElementById('customProjectInput');
+    const text = document.getElementById('newreviewText').value.trim();
+    
+    const ratingInput = document.querySelector('input[name="rating"]:checked');
+    
+    let projectName;
+    if (projectSelect.value === 'custom') {
+        projectName = customProjectInput.value.trim();
+    } else {
+        projectName = projectSelect.value;
+    }
+    
+    if (!clientName) {
+        alert('Введите имя клиента');
+        return null;
+    }
+    if (!projectName) {
+        alert('Выберите проект или введите название');
+        return null;
+    }
+    if (!ratingInput) {
+        alert('Выберите оценку');
+        return null;
+    }
+    if (!text) {
+        alert('Введите текст отзыва');
+        return null;
+    }
+    
+    return {
+        client_name: clientName,
+        project_name: projectName,
+        text: text,
+        rating: parseInt(ratingInput.value)
+    };
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const buttons = document.querySelectorAll('.reviews-tab-button');
+  const panes = {
+    published: document.getElementById('reviews-pane-published'),
+    pending: document.getElementById('reviews-pane-pending'),
+    write: document.getElementById('reviews-pane-write')
+  };
+
+  function activateTab(tabId) {
+    buttons.forEach(btn => {
+      btn.classList.remove('reviews-tab-button-active');
+    });
+
+    Object.values(panes).forEach(pane => {
+      pane.classList.remove('reviews-tab-pane-active');
+    });
+
+    const activeButton = document.querySelector(`.reviews-tab-button[data-tab="${tabId}"]`);
+    if (activeButton) {
+      activeButton.classList.add('reviews-tab-button-active');
+    }
+
+    if (panes[tabId]) {
+      panes[tabId].classList.add('reviews-tab-pane-active');
+    }
+  }
+
+  buttons.forEach(button => {
+    button.addEventListener('click', function(e) {
+      const tabId = this.getAttribute('data-tab');
+      activateTab(tabId);
+    });
+  });
+
+  loadPublishedReviews();
+
+  const publishedReviewsContainer = document.getElementById('reviews-pane-published');
+
+  publishedReviewsContainer.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.btn');
+    if (!btn) return;
+
+    const card = btn.closest('.review-published');
+    if (!card) return;
+
+    const id = card.dataset.id;
+    const action = btn.dataset.action;
+
+    if (action === 'up' || action === 'down') {
+        try {
+            const response = await fetch('/api/admin/reviews/reorder', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, direction: action })
+            });
+
+            if (response.ok) {
+                publishedReviewsContainer.style.opacity = '0.6';
+
+                setTimeout(() => {
+                    loadPublishedReviews();
+                    publishedReviewsContainer.style.opacity = '1';
+                }, 400);
+            } else {
+                const error = await response.json();
+                console.error('Ошибка:', error.error);
+            }
+        } catch (error) {
+            console.error('Ошибка при изменении порядка:', error);
+        }
+    }
+
+    if (action === 'delete') {
+        if (!confirm('Удалить этот отзыв?')) return;
+
+        try {
+            const response = await fetch(`/api/admin/reviews/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                publishedReviewsContainer.style.opacity = '0.6';
+
+                setTimeout(() => {
+                    loadPublishedReviews();
+                    publishedReviewsContainer.style.opacity = '1';
+                }, 400);
+            } else {
+                const error = await response.json();
+                console.error('Ошибка:', error.error);
+            }
+        } catch (error) {
+            console.error('Ошибка при удалении:', error);
+        }
+    }
+  });
+
+  loadPendingReviews();
+
+  const pendingContainer = document.getElementById('reviews-pane-pending');
+  pendingContainer.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.btn');
+    if (!btn) return;
+
+    const card = btn.closest('.review-pending');
+    if (!card) return;
+
+    const id = card.dataset.id;
+    const action = btn.dataset.action;
+
+    if (action === 'publish') {
+        try {
+            const response = await fetch(`/api/admin/reviews/publish/${id}`, {
+                method: 'POST'
+            });
+
+            if (response.ok) {
+                pendingContainer.style.opacity = '0.6';
+
+                setTimeout(() => {
+                    loadPendingReviews();
+                    loadPublishedReviews();
+                    activateTab('published');
+                    pendingContainer.style.opacity = '1';
+                }, 400);
+            } else {
+                const error = await response.json();
+                console.error('Ошибка:', error.error);
+            }
+        } catch (error) {
+            console.error('Ошибка при публикации:', error);
+        }
+    }
+
+    if (action === 'delete') {
+        if (!confirm('Удалить этот отзыв?')) return;
+
+        try {
+            const response = await fetch(`/api/admin/reviews/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                pendingContainer.style.opacity = '0.6';
+
+                setTimeout(() => {
+                    loadPendingReviews();
+                    pendingContainer.style.opacity = '1';
+                }, 400);
+            } else {
+                const error = await response.json();
+                console.error('Ошибка:', error.error);
+            }
+        } catch (error) {
+            console.error('Ошибка при удалении:', error);
+        }
+    }
+  });
+
+  setTimeout(() => {
+    const select = document.getElementById('newreviewProject');
+    
+    select.innerHTML = '<option value="">Выберите проект</option>';
+
+    projects.forEach(project => {
+        const option = document.createElement('option');
+        option.value = project.name;
+        option.textContent = project.name;
+        select.appendChild(option);
+    });
+
+    const customOption = document.createElement('option');
+    customOption.value = 'custom';
+    customOption.textContent = 'Свой вариант';
+    select.appendChild(customOption);
+  }, 1000);
+
+  document.getElementById('newreviewProject').addEventListener('change', function() {
+    const customContainer = document.getElementById('customProjectContainer');
+    if (this.value === 'custom') {
+        customContainer.style.display = 'block';
+    } else {
+        customContainer.style.display = 'none';
+    }
+  });
+
+  document.querySelector('.newreview-button').addEventListener('click', async function() {
+    const formData = getFormData();
+    if (!formData) return;
+    
+    try {
+        const response = await fetch('/api/admin/reviews', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+        
+        if (response.ok) {
+            document.querySelector('input[name="client-name"]').value = '';
+            document.getElementById('newreviewProject').value = '';
+            document.getElementById('customProjectContainer').style.display = 'none';
+            document.getElementById('customProjectInput').value = '';
+            document.getElementById('newreviewText').value = '';
+            const checkedRating = document.querySelector('input[name="rating"]:checked');
+            if (checkedRating) {
+                checkedRating.checked = false;
+            }
+
+            document.getElementById('reviews-pane-write').style.opacity = '0.6';
+
+            setTimeout(() => {
+                loadPublishedReviews();
+                loadPendingReviews();
+                activateTab('published');
+                document.getElementById('reviews-pane-write').style.opacity = '1';
+            }, 400);
+        } else {
+            const error = await response.json();
+            alert('Ошибка: ' + error.error);
+        }
+    } catch (error) {
+        console.error('Ошибка при отправке отзыва:', error);
+        alert('Ошибка при отправке отзыва');
+    }
+  });
+});
+
 // ЧАТЫ:
 let currentUserId = null;
 const socket = io({
