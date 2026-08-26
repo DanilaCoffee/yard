@@ -1417,7 +1417,7 @@ input[type="range"]::-moz-range-progress {
 
 .review__stars img {
     width: 10px;
-    margin-left: 2px;
+    margin-left: 5px;
 }
 
 .review__text {
@@ -3541,7 +3541,7 @@ input[type="range"]::-moz-range-progress {
         max-width: none;
         height: auto;
         min-height: 0;
-        max-height: 96vh;
+        max-height: 90vh;
         padding: 11vw 3vw 3vw 3vw;
         border-radius: 10px;
         overflow-y: scroll;
@@ -4117,7 +4117,7 @@ input[type="range"]::-moz-range-progress {
 
     .review__stars img {
         width: 2.2vw;
-        margin-left: 0;
+        margin-left: 2px;
     }
 
     .review__text {
@@ -4353,6 +4353,10 @@ input[type="range"]::-moz-range-progress {
         padding: 5px 9px;
         border-radius: 4px;
         font-size: 14px;
+    }
+
+    .review-form__stars .container {
+        width: 200px;
     }
 
     .review-form__stars .container img {

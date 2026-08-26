@@ -1023,7 +1023,7 @@ function openProjectModal(project) {
     if (window.innerWidth <= 500) {
       setTimeout(() => {
         document.querySelector('.slider-info__container > .title').style.opacity = '0';
-      }, 200);
+      }, 140);
     }
   });
 
