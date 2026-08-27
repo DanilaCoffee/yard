@@ -4305,7 +4305,7 @@ input[type="range"]::-moz-range-progress {
         height: auto;
         min-height: 0;
         max-height: none;
-        margin-top: 7vw;
+        margin-top: 10vw;
     }
 
     .contacts__container {
