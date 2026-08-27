@@ -1315,16 +1315,22 @@ input[type="range"]::-moz-range-progress {
 }
 
 .reviews {
+    position: relative;
     max-width: 2800px;
     margin: auto;
     height: 455px;
     background-color: #FFFFFF;
 }
 
-.reviews__title {
+.reviews__header {
     max-width: 1150px;
-    margin: auto;
-    padding: 70px 0;
+    margin: 100px auto 70px auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+}
+
+.reviews__title {
     font-family: Inter;
     font-weight: 500;
     font-style: Medium;
@@ -1333,6 +1339,47 @@ input[type="range"]::-moz-range-progress {
     line-height: 100%;
     letter-spacing: 0%;
     color: #000000;
+}
+
+.new-review-button button {
+    position: relative;
+    padding: 0 0 1.5px 3px;
+    border: none;
+    border-bottom: 1px solid #888888;
+    background-color: transparent;
+    font-family: Inter;
+    font-weight: 400;
+    font-style: Regular;
+    font-size: 16px;
+    leading-trim: NONE;
+    line-height: 100%;
+    letter-spacing: 0%;
+    color: #888888;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: color 150ms ease, border-bottom 150ms ease;
+}
+
+.new-review-button button::after {
+    content: '';
+    display: block;
+    width: 14px;
+    height: 13px;
+    margin-left: 6px;
+    background-image: url(img/pencil-icon-grey.svg);
+    background-size: cover;
+
+}
+
+.new-review-button button:hover {
+    color: #A01010;
+    border-bottom: 1px solid #A01010;
+}
+
+.new-review-button button:hover::after {
+    background-image: url(img/pencil-icon.svg);
 }
 
 .reviews__container {
@@ -2437,6 +2484,90 @@ input[type="range"]::-moz-range-progress {
     background-color: #D22F2F;
 }
 
+.new-review-modal {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    backdrop-filter: blur(3px);
+    background-color: rgba(0, 0, 0, 0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.new-review__contaner {
+    position: relative;
+    width: 32vw;
+    min-width: 350px;
+    max-width: 550px;
+    box-shadow: 0px 0px 15px 0px rgba(0, 0, 0, 0.6);
+    background-color: #FFFFFF;
+    border-radius: 14px;
+    display: flex;
+    animation: modalShow 200ms ease-out;
+}
+
+#newreviewForm {
+    width: 100%;
+    padding: 25px 15px;
+}
+
+#newreviewForm .review-form__header {
+    margin-top: 10px;
+}
+
+#newreviewForm .review-form__stars .container {
+    width: 150px;
+}
+
+.new-review__success {
+    display: none;
+    padding: 80px;
+}
+
+.review-success__img {
+    margin-bottom: 50px;
+    text-align: center;
+}
+
+.review-success__img img {
+    width: 170px;
+}
+
+.review-success__title {
+    margin-bottom: 12px;
+    font-family: Inter;
+    font-weight: 500;
+    font-style: Medium;
+    font-size: 26px;
+    leading-trim: NONE;
+    line-height: 100%;
+    letter-spacing: 0%;
+    text-align: center;
+}
+
+.review-success__subtitle {
+    font-family: Inter;
+    font-weight: 400;
+    font-style: Regular;
+    font-size: 15px;
+    leading-trim: NONE;
+    line-height: 110%;
+    letter-spacing: 0%;
+    text-align: center;
+    color: #888888;
+}
+
+.new-review__close {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    cursor: pointer;
+}
+
 .project-modal {
     position: fixed;
     top: 0;
@@ -3398,6 +3529,18 @@ input[type="range"]::-moz-range-progress {
         margin: 0 30px;
     }
 
+    .review-success__img {
+        margin-bottom: 35px;
+    }
+
+    .review-success__img img {
+        width: 145px;
+    }
+
+    .new-review__success {
+        padding: 65px 17px;
+    }
+
     .footer__container {
         width: auto;
         margin: 0 20px;
@@ -4077,10 +4220,29 @@ input[type="range"]::-moz-range-progress {
         margin-bottom: 5vw;
     }
 
+    .reviews__header {
+        margin: 1vw 0 11vw 0;
+    }
+
     .reviews__title {
         margin-left: 4vw;
         font-size: 5.6vw;
-        padding: 1vw 0 11vw 0;
+    }
+
+    .new-review-button {
+        position: absolute;
+        top: 76vw;
+        left: 5vw;
+    }
+
+    .new-review-button button {
+        font-size: 13px;
+    }
+
+    .new-review-button button::after {
+        width: 13px;
+        height: 12px;
+        margin-left: 5px;
     }
 
     .reviews__arrow {
@@ -4143,6 +4305,7 @@ input[type="range"]::-moz-range-progress {
         height: auto;
         min-height: 0;
         max-height: none;
+        margin-top: 7vw;
     }
 
     .contacts__container {
@@ -4357,6 +4520,10 @@ input[type="range"]::-moz-range-progress {
 
     .review-form__stars .container {
         width: 200px;
+    }
+
+    #newreviewForm .review-form__stars .container {
+        width: 120px;
     }
 
     .review-form__stars .container img {

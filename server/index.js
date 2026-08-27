@@ -689,11 +689,11 @@ async function startServer() {
 
             res.status(201).json({ id: result.insertId, success: true });
 
-            sendVKNotification(
-              `📝 НОВЫЙ ОТЗЫВ!\n\n` +
-              `Имя клиента: ${client_name}\n` +
-              `Перейдите в админку, чтобы просмотреть и опубликовать.`
-            );
+            // sendVKNotification(
+            //   `📝 НОВЫЙ ОТЗЫВ!\n\n` +
+            //   `Имя клиента: ${client_name}\n` +
+            //   `Перейдите в админку, чтобы просмотреть и опубликовать.`
+            // );
         } catch (error) {
             console.error('Ошибка при создании отзыва:', error);
             res.status(500).json({ error: 'Ошибка сервера' });

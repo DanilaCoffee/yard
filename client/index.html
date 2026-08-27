@@ -326,7 +326,14 @@
   </section>
 
   <section class="reviews" id="reviews">
-    <h2 class="reviews__title">Что говорят наши клиенты</h2>
+    <div class="reviews__header">
+      <h2 class="reviews__title">Что говорят наши клиенты</h2>
+      <div class="new-review-button">
+        <button>
+          Написать отзыв
+        </button>
+      </div>
+    </div>
     <div class="reviews__container">
       <div class="reviews__arrow reviews__arrow--left">
         <img src="img/slider-arrow-disabled.svg" alt="Стрелка слайдера">
@@ -591,6 +598,74 @@
         <div class="form-close">
           <img src="img/close-button-black.svg" alt="Иконка закрытия формы">
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="new-review-modal">
+    <div class="new-review__contaner">
+      <form id="newreviewForm" action="">
+        <div class="review-form__header">
+          <div class="text">Оставить отзыв</div>
+        </div>
+        <div class="review-form__title">
+          Ваше имя
+        </div>
+        <div class="review-form__input">
+          <input type="text" name="client_name" placeholder="Введите ваше имя" maxlength="25" required>
+        </div>
+        <div class="review-form__title">
+          Название проекта
+        </div>
+        <div class="review-form__input">
+          <input type="text" name="project_name" placeholder="Как назывался ваш проект" required>
+        </div>
+        <div class="review-form__title">
+          Ваша оценка
+        </div>
+        <div class="review-form__stars">
+          <div class="container" id="newstarsContainer">
+            <img src="img/review-star-empty.svg" alt="Пустая звезда для выбора оценки" data-value="1">
+            <img src="img/review-star-empty.svg" alt="Пустая звезда для выбора оценки" data-value="2">
+            <img src="img/review-star-empty.svg" alt="Пустая звезда для выбора оценки" data-value="3">
+            <img src="img/review-star-empty.svg" alt="Пустая звезда для выбора оценки" data-value="4">
+            <img src="img/review-star-empty.svg" alt="Пустая звезда для выбора оценки" data-value="5">
+          </div>
+          <div class="title">
+            Нажмите на звезду
+          </div>
+          <input type="hidden" name="rating" id="newratingValue" value="0">
+        </div>
+        <div class="review-form__title">
+          Ваш отзыв
+        </div>
+        <div class="review-form__input">
+          <textarea name="client_name" rows="4" placeholder="Поделитесь своим опытом работы с нами" required></textarea>
+        </div>
+        <div class="review-form__check">
+          <input type="checkbox" required> Я согласен с обработкой персональных данных
+        </div>
+        <div class="review-form__button">
+          <button type="submit">Отправить отзыв</button>
+        </div>
+        <div class="review-form__info">
+          <div class="img">
+            <img src="img/review-info-icon.svg" alt="Иконка информации об отправке отзыва">
+          </div>
+          <div class="text">
+            Ваш отзыв будет опубликован после проверки модератором. 
+          </div>
+        </div>
+      </form>
+      <div class="new-review__success">
+        <div class="review-success__img">
+          <img src="img/review-success.svg" alt="Иконка успешной отправки отзыва">
+        </div>
+        <div class="review-success__title">Спасибо за ваш отзыв!</div>
+        <div class="review-success__subtitle">Ваш отзыв отправлен на модерацию. После проверки он появится в разделе "Что говорят наши клиенты".</div>
+      </div>
+      <div class="new-review__close">
+        <img src="img/close-button-black.svg" alt="Иконка закрытия модального окна">
       </div>
     </div>
   </div>

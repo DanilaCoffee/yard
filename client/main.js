@@ -358,9 +358,9 @@ document.addEventListener('DOMContentLoaded', function() {
   initScrollAnimation('.projects');
   initScrollAnimation('.calculator__title');
   initScrollAnimation('.calculator__container');
-  initScrollAnimation('.reviews__title');
+  initScrollAnimation('.reviews__header');
   initScrollAnimation('.reviews__container');
-  initScrollAnimation('.contacts__container .aside');
+  initScrollAnimation('.contacts__container');
   initScrollAnimation('.request__container');
 
   const switchEl = document.getElementById('switch');
@@ -622,6 +622,93 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   loadClientReviews();
+
+  document.querySelector('.new-review-button button').addEventListener('click', () => {
+    document.querySelector('.new-review-modal').style.display = 'flex';
+  });
+
+  document.querySelector('.new-review__close').addEventListener('click', () => {
+    document.querySelector('.new-review-modal').style.display = 'none';
+  });
+
+  const starsContainer = document.getElementById('newstarsContainer');
+  const stars = starsContainer.querySelectorAll('#newstarsContainer img');
+  const ratingInput = document.getElementById('newratingValue');
+
+  let selectedRating = 0;
+
+  function updateStars(rating) {
+      stars.forEach((star, index) => {
+          if (index < rating) {
+              star.src = 'img/review-star-filled.svg';
+          } else {
+              star.src = 'img/review-star-empty.svg';
+          }
+      });
+  }
+
+  starsContainer.addEventListener('click', function(e) {
+      const star = e.target.closest('img');
+      if (!star) return;
+      
+      const value = parseInt(star.dataset.value);
+      selectedRating = value;
+      ratingInput.value = value;
+      updateStars(value);
+  });
+
+  document.getElementById('newreviewForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    if (selectedRating === 0) {
+        alert('Пожалуйста, выберите оценку');
+        return;
+    }
+    
+    const formData = {
+        client_name: this.querySelector('input[name="client_name"]').value.trim(),
+        rating: selectedRating,
+        text: this.querySelector('textarea[name="client_name"]').value.trim(),
+        project_name: this.querySelector('input[name="project_name"]').value.trim()
+    };
+    
+    if (!formData.client_name) {
+        alert('Введите ваше имя');
+        return;
+    }
+    if (!formData.text) {
+        alert('Введите текст отзыва');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/reviews', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+        
+        if (response.ok) {
+            document.querySelector('.new-review__contaner').style.opacity = '0.6';
+            setTimeout(() => {
+              this.reset();
+              selectedRating = 0;
+              ratingInput.value = 0;
+              updateStars(0);
+              document.querySelector('#newreviewForm .review-form__check input').checked = false;
+              document.querySelector('.new-review__contaner').style.opacity = '1';
+              document.querySelector('#newreviewForm').style.display = 'none'
+              document.querySelector('.new-review__success').style.display = 'block';
+            }, 600);
+        } else {
+            const error = await response.json();
+            alert('Ошибка: ' + error.error);
+        }
+    } catch (error) {
+        console.error('Ошибка при отправке отзыва:', error);
+        alert('Произошла ошибка при отправке. Попробуйте позже.');
+    }
+  });
 });
 
 function formatArea(area) {
@@ -934,7 +1021,7 @@ function openProjectModal(project) {
               <div class="data__value"></div>
             </div>
           </div>
-          <div class="review-button"></div>
+          <div id="reviewButton" class="review-button"></div>
           <div class="review-form">
             <form id="reviewForm" action="">
               <div class="review-form__header">
@@ -998,7 +1085,7 @@ function openProjectModal(project) {
   projectData[2].innerHTML = project.renovation_type;
 
   document.querySelector('.project-modal').style.display = 'flex';
-  document.querySelector('.review-button').innerHTML = '<button><img src="img/pencil-icon.svg" alt=""> Оставить отзыв</button>';
+  document.querySelector('#reviewButton').innerHTML = '<button><img src="img/pencil-icon.svg" alt=""> Оставить отзыв</button>';
 
   const sliderInfo = document.querySelector('.slider-info__container');
   const sliderInfoHeight = sliderInfo.offsetHeight;
@@ -1011,7 +1098,7 @@ function openProjectModal(project) {
 
   sliderInfo.style.height = sliderInfoHeight + 10 + 'px';
 
-  const reviewButton = document.querySelector('.review-button button');
+  const reviewButton = document.querySelector('#reviewButton');
 
   reviewButton.addEventListener('click', () => {
     setTimeout(() => {
@@ -1027,7 +1114,7 @@ function openProjectModal(project) {
     }
   });
 
-  document.querySelector('.review-form__header .hide-button').addEventListener('click', () => {
+  document.querySelector('#reviewForm .review-form__header .hide-button').addEventListener('click', () => {
     sliderInfo.style.height = sliderInfoHeight + 10 + 'px';
     reviewForm.style.minHeight = '0';
     reviewForm.style.transform = `translateY(100px)`;
@@ -1137,13 +1224,6 @@ function openProjectModal(project) {
 document.querySelector('.project-close').addEventListener('click', () => {
   document.querySelector('body').style.overflowY = 'scroll';
   document.querySelector('.project-modal').style.display = 'none';
-});
-
-document.querySelector('.project-modal').addEventListener('click', e => {
-  if (e.target === document.querySelector('.project-modal')) {
-    document.querySelector('body').style.overflowY = 'scroll';
-    document.querySelector('.project-modal').style.display = 'none';
-  }
 });
 
 const projectBlock = document.querySelector('.project-cards');
